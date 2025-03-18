@@ -1,12 +1,21 @@
+# tower.py
+#
+# Copyright (c) 2025 Daniel Andrlik
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 import random
+from enum import Enum
 from typing import ClassVar
 
-from textual.app import App, ComposeResult
-from textual.color import Color
-from textual.reactive import reactive
-from textual.widget import Widget
-from textual.widgets import Footer, Header
+
+class PerilLevel(Enum):
+    HEALTHY = 1
+    WOUNDED = 2
+    MORTALITY = 3
+    DEAD = 4
 
 
 @dataclasses.dataclass
@@ -37,6 +46,9 @@ class Tower:
     _dice_size: int = 6
     _dice_left: int = 100
 
+    HEALTHY_LIMIT: ClassVar[int] = 60
+    FATAL_LIMIT: ClassVar[int] = 25
+
     def __init__(self, dice_size: int = 6, dice_amount: int = 100) -> None:
         if dice_size < 2:  # noqa: PLR2004
             msg = "Dice must have more than one side!"
@@ -44,6 +56,10 @@ class Tower:
         self._dice_size = dice_size
         self.set_dice_left(dice_amount)
         self.possible_values = self._get_possible_die_values()
+        self.roll_distributions = []
+
+    def __str__(self) -> str:  # no cov
+        return f"Tower ({self.get_dice_left()}"
 
     def get_dice_left(self) -> int:  # no cov
         return self._dice_left
@@ -83,7 +99,7 @@ class Tower:
         for x in self.possible_values:
             results[x] = 0
         for _x in range(self._dice_left):
-            die_result = random.randint(1, self._dice_size)  # noqa: S311
+            die_result = random.randint(1, self._dice_size)  # nosec  # noqa: S311
             results[die_result] += 1
         self.set_dice_left(self._dice_left - results[1])
         self.roll_distributions.append(
@@ -91,48 +107,12 @@ class Tower:
         )
         return RollResult(dice_rolled=dice_to_roll, dice_lost=results[1])
 
-
-class TowerApp(App):
-    """A TUI that manages a tumbling tower mechanic via die rolls."""
-
-    BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
-    TITLE = "Wretched Tower"
-
-    def compose(self) -> ComposeResult:
-        """Create child widgets"""
-        yield Header()
-        yield Footer()
-
-    def action_toggle_dark(self) -> None:
-        """Toggles between dark and light mode."""
-        self.theme = (  # type: ignore
-            "textual-dark" if self.theme == "textual-light" else "textual-light"
-        )
-
-
-class TowerWidget(Widget):
-    """A widget that displays the current tower."""
-
-    tower = Tower()
-    dice_remaining = reactive(100)
-    tower_color = reactive(Color.parse("green"))
-
-    HEALTHY_LIMIT: ClassVar[int] = 60
-    DEADLY_LIMIT: ClassVar[int] = 25
-
-    def compute_dice_remaining(self) -> int:
-        return self.tower.get_dice_left()
-
-    def compute_tower_color(self) -> Color:
-        if self.dice_remaining < self.DEADLY_LIMIT:
-            return Color.parse("red")
-        elif self.dice_remaining < self.HEALTHY_LIMIT:
-            return Color.parse("yellow")
+    def get_peril_level(self) -> PerilLevel:
+        if self._dice_left == 0:
+            return PerilLevel.DEAD
+        elif self._dice_left < self.FATAL_LIMIT:
+            return PerilLevel.MORTALITY
+        elif self._dice_left < self.HEALTHY_LIMIT:
+            return PerilLevel.WOUNDED
         else:
-            return Color.parse("green")
-
-    def watch_tower_color(self, color: Color) -> None:
-        self.query_one("#color").styles.color = color
-
-    def on_roll_tower(self, tower: Tower) -> None:
-        self.dice_remaining = tower.get_dice_left()
+            return PerilLevel.HEALTHY

@@ -194,6 +194,10 @@ commands = [["pyright"]]
 [tool.check-wheel-contents]
 ignore = ["W004"]
 
+[tool.bandit]
+exclude_dirs = ["tests", "conftest.py"]
+
+
 [tool.bumpversion]
 current_version = "0.0.1"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
