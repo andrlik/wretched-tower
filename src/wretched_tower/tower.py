@@ -20,12 +20,19 @@ class PerilLevel(Enum):
 
 @dataclasses.dataclass
 class RollDistribution:
+    """
+    An object that references the number of dice rolled and dict
+    representing the counts for each possible result.
+    """
+
     dice_rolled: int
     dice_results: dict[int, int]
 
 
 @dataclasses.dataclass
 class RollResult:
+    """An object that contains the overall result of a tower roll: rolled vs lost."""
+
     dice_rolled: int
     dice_lost: int
 
@@ -62,9 +69,25 @@ class Tower:
         return f"Tower ({self.get_dice_left()}"
 
     def get_dice_left(self) -> int:  # no cov
+        """
+        Get the dice remaining to be rolled.
+
+        Returns:
+            int: The dice remaining.
+        """
         return self._dice_left
 
     def set_dice_left(self, dice_left: int) -> None:
+        """
+        Allows you to set the dice left value with some validations applied.
+        Allowed values must be between 0 and 100.
+
+        Args:
+            dice_left (int): The dice remaining.
+
+        Raises:
+            ValueError: If the dice amount exceeds 100 or is less than 0.
+        """
         if dice_left > 100:  # noqa: PLR2004
             msg = "Tower cannot exceed 100 dice!"
             raise ValueError(msg)
@@ -74,7 +97,12 @@ class Tower:
         self._dice_left = dice_left
 
     def _get_possible_die_values(self) -> list[int]:
-        """Get a list of all the possible values based on the dice size."""
+        """
+        Get a list of all the possible values based on the dice size.
+
+        Returns:
+            list[int]: The possible values based on the die size.
+        """
         current_value = 1
         possible_values = []
         while current_value <= self._dice_size:
@@ -93,6 +121,9 @@ class Tower:
         """
         Using the dice remaining, roll them and then remove any that are ones,
         recording the results.
+
+        Returns:
+            RollResult: The results of the roll as a RollResult object.
         """
         dice_to_roll = self.get_dice_left()
         results = self.get_result_dict_template()

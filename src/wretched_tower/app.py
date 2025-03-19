@@ -9,20 +9,75 @@ from textual.app import App, ComposeResult
 from textual.color import Color
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Footer, Header
+from textual.widgets import DataTable, Footer, Header, Label
 
 from wretched_tower.tower import PerilLevel, Tower
+
+
+class TowerStatus(Widget):
+    """A widget that displays the current status of the tower."""
+
+    dice_remaining = reactive(100)
+    peril_level = reactive(PerilLevel.HEALTHY)
+    tower_color = reactive(Color.parse("green"))
+
+    def __init__(self, tower: Tower) -> None:
+        super().__init__()
+        self.dice_remaining = tower.get_dice_left()
+        self.peril_level = tower.get_peril_level()
+        self.tower_color = self.get_tower_color_from_peril_level(self.peril_level)
+
+    @staticmethod
+    def get_tower_color_from_peril_level(peril_level: PerilLevel) -> Color:
+        match peril_level:
+            case PerilLevel.MORTALITY:
+                return Color.parse("red")
+            case PerilLevel.WOUNDED:
+                return Color.parse("yellow")
+            case PerilLevel.DEAD:
+                return Color.parse("purple")
+            case PerilLevel.HEALTHY:
+                return Color.parse("green")
+            case _:
+                return Color.parse("green")
+
+    def compose(self) -> ComposeResult:
+        yield Label(renderable="[b]Dice Remaining[/b]")
+        yield Label(str(self.dice_remaining), id="dice")
+        yield DataTable(name="Roll Results")
+
+    def on_mount(self) -> None:
+        table = self.query_one(DataTable)
+        table.add_columns("Rolled", "1", "2", "3", "4", "5", "6")
+
+    def watch_tower_color(self, color: Color) -> None:
+        self.styles.color = color
+
+    def watch_dice_remaining(self, dice_remaining: int) -> None:
+        # Redraw the tower.
+        # self.query_one("#dice").value = str(dice_remaining)
+        pass
+
+    def watch_peril_level(self, peril_level: PerilLevel) -> None:
+        self.tower_color = self.get_tower_color_from_peril_level(peril_level)
 
 
 class TowerApp(App):
     """A TUI that manages a tumbling tower mechanic via die rolls."""
 
-    BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
+    BINDINGS = [
+        ("d", "toggle_dark", "Toggle dark mode"),
+        ("r", "roll_tower", "Roll tower dice"),
+        ("ctrl+n", "new_tower", "Start new tower"),
+    ]
     TITLE = "Wretched Tower"
+    # theme = "tokyo-night"
+    tower = Tower()
 
     def compose(self) -> ComposeResult:
         """Create child widgets"""
         yield Header()
+        yield TowerStatus(tower=self.tower)
         yield Footer()
 
     def action_toggle_dark(self) -> None:
@@ -31,29 +86,32 @@ class TowerApp(App):
             "textual-dark" if self.theme == "textual-light" else "textual-light"
         )
 
+    def action_roll_tower(self) -> None:
+        """Roll the tower and send the results to the child widgets as needed."""
+        if self.tower.get_dice_left() > 0:
+            self.tower.roll_tower()
+            tower_status_widget = self.query_one(TowerStatus)
+            tower_status_widget.dice_remaining = self.tower.get_dice_left()
+            tower_status_widget.peril_level = self.tower.get_peril_level()
+            last_result = self.tower.roll_distributions[-1]
+            tower_status_widget.query_one(DataTable).add_row(
+                last_result.dice_rolled,
+                last_result.dice_results[1],
+                last_result.dice_results[2],
+                last_result.dice_results[3],
+                last_result.dice_results[4],
+                last_result.dice_results[5],
+                last_result.dice_results[6],
+            )
 
-class TowerWidget(Widget):
-    """A widget that displays the current tower."""
-
-    tower = Tower()
-    dice_remaining = reactive(100)
-    tower_color = reactive(Color.parse("green"))
-
-    def compute_dice_remaining(self) -> int:
-        return self.tower.get_dice_left()
-
-    def compute_tower_color(self) -> Color:
-        if self.tower.get_peril_level() == PerilLevel.MORTALITY:
-            return Color.parse("red")
-        elif self.tower.get_peril_level() == PerilLevel.WOUNDED:
-            return Color.parse("yellow")
-        elif self.tower.get_peril_level() == PerilLevel.DEAD:
-            return Color.parse("purple")
+    def action_new_tower(self) -> None:
+        self.tower = Tower()
+        tower_status_widget = self.query_one(TowerStatus)
+        tower_status_widget.dice_remaining = self.tower.get_dice_left()
+        tower_status_widget.peril_level = self.tower.get_peril_level()
+        tower_status_widget.query_one(DataTable).clear()
+        dice_display = tower_status_widget.query(Label).last()
+        if self.tower.get_dice_left() > 0:
+            dice_display.update(content=str(self.tower.get_dice_left()))
         else:
-            return Color.parse("green")
-
-    def watch_tower_color(self, color: Color) -> None:
-        self.query_one("#color").styles.color = color
-
-    def on_roll_tower(self, tower: Tower) -> None:
-        self.dice_remaining = tower.get_dice_left()
+            dice_display.update(content="You have died")
