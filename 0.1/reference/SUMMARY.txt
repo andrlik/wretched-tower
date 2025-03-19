@@ -1,2 +1,3 @@
 * wretched_tower
+    * [app](wretched_tower/app.md)
     * [tower](wretched_tower/tower.md)
