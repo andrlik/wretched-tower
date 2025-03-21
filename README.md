@@ -2,6 +2,16 @@
 
 A digital dice-based tool to use as an alternative to tumbling tower mechanics used in games, such as those based on the [Wretched and Alone SRD](https://sealedlibrary.itch.io/wretched-alone-srd) by Sealed Library.
 
+[![PyPI -- Version](https://img.shields.io/pypi/v/wretched-tower)](https://pypi.org/project/wretched-tower/)
+[![Black code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/andrlik/wretched-tower/blob/main/.pre-commit-config.yaml)
+[![License](https://img.shields.io/github/license/andrlik/wretched-tower)](https://github.com/andrlik/wretched-tower/blob/main/LICENSE)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Security: bandit](https://img.shields.io/badge/security-bandit-green.svg)](https://github.com/PyCQA/bandit)
+[![Checked with pyright](https://microsoft.github.io/pyright/img/pyright_badge.svg)](https://microsoft.github.io/pyright/)
+[![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/andrlik/wretched-tower/releases)
+
 ## The mechanic
 
 The idea for the mechanic was [originally posted](https://itch.io/jam/wretched-jam/topic/796498/dice-substitute-for-jenga-towers) by user Speak the Sky during a game jam for the SRD.
