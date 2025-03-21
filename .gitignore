@@ -10,3 +10,5 @@ wheels/
 .venv
 
 site/*
+
+snapshot_report.html

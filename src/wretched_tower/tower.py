@@ -11,6 +11,11 @@ from enum import Enum
 from typing import ClassVar
 
 
+class EmptyTowerError(Exception):
+    """Used when actions are taken on a tower where no dice remain."""
+    pass
+
+
 class PerilLevel(Enum):
     HEALTHY = 1
     WOUNDED = 2
@@ -126,6 +131,9 @@ class Tower:
             RollResult: The results of the roll as a RollResult object.
         """
         dice_to_roll = self.get_dice_left()
+        if dice_to_roll == 0:
+            msg = "Tower does not have any dice remaining."
+            raise EmptyTowerError(msg)
         results = self.get_result_dict_template()
         for x in self.possible_values:
             results[x] = 0

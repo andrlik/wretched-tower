@@ -1,4 +1,4 @@
-exclude: "^docs/|/migrations/|tests/data"
+exclude: "^docs/|/migrations/|tests/__snapshots__"
 default_stages: [pre-commit]
 
 repos:

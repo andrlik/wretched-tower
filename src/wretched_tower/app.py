@@ -5,45 +5,72 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Any
+
 from textual.app import App, ComposeResult
 from textual.color import Color
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import DataTable, Footer, Header, Label
+from textual.widgets import DataTable, Digits, Footer, Header, Static
 
-from wretched_tower.tower import PerilLevel, Tower
+from wretched_tower.tower import EmptyTowerError, PerilLevel, Tower
+
+
+def get_dice_display(dice_left: int) -> str:
+    return str(dice_left) if dice_left > 0 else "☠️ 0 ☠️"
+
+
+def get_tower_color_from_peril_level(peril_level: PerilLevel) -> Color:
+    match peril_level:
+        case PerilLevel.MORTALITY:
+            return Color.parse("orange")
+        case PerilLevel.WOUNDED:
+            return Color.parse("yellow")
+        case PerilLevel.DEAD:
+            return Color.parse("red")
+        case PerilLevel.HEALTHY:
+            return Color.parse("green")
+        case _:  # no cov
+            return Color.parse("green")
+
+
+def get_peril_meter_display_from_peril_level(peril_level: PerilLevel) -> str:
+    match peril_level:
+        case PerilLevel.MORTALITY:
+            return "MORTAL DANGER"
+        case PerilLevel.WOUNDED:
+            return "WOUNDED"
+        case PerilLevel.DEAD:
+            return "DEAD"
+        case PerilLevel.HEALTHY:
+            return "HEALTHY"
+        case _:  # no cov
+            return "HEALTHY"
+
+
+class DiceCounter(Digits):
+    pass
+
+
+class PerilMeter(Static):
+    pass
 
 
 class TowerStatus(Widget):
     """A widget that displays the current status of the tower."""
 
-    dice_remaining = reactive(100)
     peril_level = reactive(PerilLevel.HEALTHY)
     tower_color = reactive(Color.parse("green"))
 
-    def __init__(self, tower: Tower) -> None:
+    def __init__(self, tower: Tower, *args: Any, **kwargs: Any) -> None:  # noqa: ARG002
         super().__init__()
-        self.dice_remaining = tower.get_dice_left()
         self.peril_level = tower.get_peril_level()
-        self.tower_color = self.get_tower_color_from_peril_level(self.peril_level)
-
-    @staticmethod
-    def get_tower_color_from_peril_level(peril_level: PerilLevel) -> Color:
-        match peril_level:
-            case PerilLevel.MORTALITY:
-                return Color.parse("red")
-            case PerilLevel.WOUNDED:
-                return Color.parse("yellow")
-            case PerilLevel.DEAD:
-                return Color.parse("purple")
-            case PerilLevel.HEALTHY:
-                return Color.parse("green")
-            case _:
-                return Color.parse("green")
+        self.tower_color = get_tower_color_from_peril_level(self.peril_level)
 
     def compose(self) -> ComposeResult:
-        yield Label(renderable="[b]Dice Remaining[/b]")
-        yield Label(str(self.dice_remaining), id="dice")
+        yield Static("[b]Dice Remaining[/b]")
+        yield DiceCounter("100", id="dice")
+        yield PerilMeter(get_peril_meter_display_from_peril_level(self.peril_level))
         yield DataTable(name="Roll Results")
 
     def on_mount(self) -> None:
@@ -53,13 +80,8 @@ class TowerStatus(Widget):
     def watch_tower_color(self, color: Color) -> None:
         self.styles.color = color
 
-    def watch_dice_remaining(self, dice_remaining: int) -> None:
-        # Redraw the tower.
-        # self.query_one("#dice").value = str(dice_remaining)
-        pass
-
     def watch_peril_level(self, peril_level: PerilLevel) -> None:
-        self.tower_color = self.get_tower_color_from_peril_level(peril_level)
+        self.tower_color = get_tower_color_from_peril_level(peril_level)
 
 
 class TowerApp(App):
@@ -74,10 +96,19 @@ class TowerApp(App):
     # theme = "tokyo-night"
     tower = Tower()
 
+    CSS = """
+        TowerStatus Static {
+            text-align: center;
+        }
+        DiceCounter {
+            text-align: center;
+        }
+    """
+
     def compose(self) -> ComposeResult:
         """Create child widgets"""
         yield Header()
-        yield TowerStatus(tower=self.tower)
+        yield TowerStatus(tower=self.tower, id="status")
         yield Footer()
 
     def action_toggle_dark(self) -> None:
@@ -88,11 +119,17 @@ class TowerApp(App):
 
     def action_roll_tower(self) -> None:
         """Roll the tower and send the results to the child widgets as needed."""
-        if self.tower.get_dice_left() > 0:
+        try:
             self.tower.roll_tower()
+            dice_left = self.tower.get_dice_left()
             tower_status_widget = self.query_one(TowerStatus)
-            tower_status_widget.dice_remaining = self.tower.get_dice_left()
             tower_status_widget.peril_level = self.tower.get_peril_level()
+            self.query_one(DiceCounter).update(get_dice_display(dice_left))
+            self.query_one(PerilMeter).update(
+                get_peril_meter_display_from_peril_level(
+                    tower_status_widget.peril_level
+                )
+            )
             last_result = self.tower.roll_distributions[-1]
             tower_status_widget.query_one(DataTable).add_row(
                 last_result.dice_rolled,
@@ -103,15 +140,18 @@ class TowerApp(App):
                 last_result.dice_results[5],
                 last_result.dice_results[6],
             )
+            if dice_left == 0:
+                self.notify("[b][red]You Have Died[/red][/b]")
+        except EmptyTowerError:
+            self.notify("You are already dead.", severity="error")
 
     def action_new_tower(self) -> None:
         self.tower = Tower()
+        dice_left = self.tower.get_dice_left()
         tower_status_widget = self.query_one(TowerStatus)
-        tower_status_widget.dice_remaining = self.tower.get_dice_left()
+        self.query_one(DiceCounter).update(get_dice_display(dice_left))
         tower_status_widget.peril_level = self.tower.get_peril_level()
+        self.query_one(PerilMeter).update(
+            get_peril_meter_display_from_peril_level(tower_status_widget.peril_level)
+        )
         tower_status_widget.query_one(DataTable).clear()
-        dice_display = tower_status_widget.query(Label).last()
-        if self.tower.get_dice_left() > 0:
-            dice_display.update(content=str(self.tower.get_dice_left()))
-        else:
-            dice_display.update(content="You have died")

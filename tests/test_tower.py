@@ -7,7 +7,7 @@
 
 import pytest
 
-from wretched_tower.tower import PerilLevel, Tower
+from wretched_tower.tower import EmptyTowerError, PerilLevel, Tower
 
 
 @pytest.mark.parametrize(
@@ -94,3 +94,5 @@ def test_tower_peril_dead() -> None:
     # Use private access to this property to mimic the dead scenario.
     tower._dice_left = 0
     assert tower.get_peril_level() == PerilLevel.DEAD
+    with pytest.raises(EmptyTowerError):
+        tower.roll_tower()
