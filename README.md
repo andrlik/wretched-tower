@@ -11,6 +11,8 @@ A digital dice-based tool to use as an alternative to tumbling tower mechanics u
 [![Security: bandit](https://img.shields.io/badge/security-bandit-green.svg)](https://github.com/PyCQA/bandit)
 [![Checked with pyright](https://microsoft.github.io/pyright/img/pyright_badge.svg)](https://microsoft.github.io/pyright/)
 [![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/andrlik/wretched-tower/releases)
+![Test results](https://github.com/andrlik/wretched-tower/actions/workflows/ci.yml/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/andrlik/wretched-tower/badge.svg?branch=main)](https://coveralls.io/github/andrlik/wretched-tower?branch=main)
 
 ## The mechanic
 
