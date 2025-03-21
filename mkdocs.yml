@@ -22,7 +22,8 @@ repo_url: https://github.com/andrlik/wretched-tower
 plugins:
   - search
   - autorefs
-  - include-markdown
+  - include-markdown:
+      rewrite_relative_urls: false
   - gen-files:
       scripts:
         - docs/scripts/gen_ref_files.py
@@ -44,6 +45,7 @@ markdown_extensions:
     - pymdownx.highlight:
         anchor_linenums: true
     - pymdownx.inlinehilite
+    - pymdownx.keys
     - pymdownx.snippets
     - pymdownx.superfences
     - footnotes
